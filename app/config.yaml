@@ -62,6 +62,10 @@ app:
     # conn Peer 连接peer方式 grpc/rest
     connpeer: rest
 
+    # inner user
+    users: test_user0 test_user1 test_user2 test_user3 test_user4
+
+
 
 ###############################################################################
 #

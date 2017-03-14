@@ -38,6 +38,7 @@ func buildRouter() *web.Router {
 	api.Get("/myasset", (*AppREST).MyAsset)
 	api.Get("/currencys", (*AppREST).Currencys)
 	api.Get("/history", (*AppREST).History)
+	api.Get("/users", (*AppREST).Users)
 
 	// Add routes
 	currencyRouter := api.Subrouter(AppREST{}, "/currency")

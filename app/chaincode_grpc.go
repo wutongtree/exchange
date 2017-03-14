@@ -40,10 +40,6 @@ func initNVP() (err error) {
 }
 
 func initPeerClient() (err error) {
-	// config.SetupTestConfig(".")
-	viper.Set("ledger.blockchain.deploy-system-chaincode", "false")
-	viper.Set("peer.validator.validity-period.verification", "false")
-
 	peerClientConn, err = peer.NewPeerClientConnection()
 	if err != nil {
 		fmt.Printf("error connection to server at host:port = %s\n", viper.GetString("peer.address"))
@@ -61,7 +57,6 @@ func initPeerClient() (err error) {
 }
 
 func setCryptoClient(enrollID, enrollPWD string) (crypto.Client, error) {
-	myLogger.Debug("========", enrollID, enrollPWD)
 	if len(enrollPWD) > 0 {
 		if err := crypto.RegisterClient(enrollID, nil, enrollID, enrollPWD); err != nil {
 			return nil, err

@@ -12,6 +12,7 @@ import (
 
 	"github.com/gocraft/web"
 	"github.com/hyperledger/fabric/core/util"
+	"github.com/spf13/viper"
 )
 
 type restResp struct {
@@ -1353,16 +1354,6 @@ func (a *AppREST) CheckCancel(rw web.ResponseWriter, req *web.Request) {
 	myLogger.Debug("------------- CheckCancel Done")
 }
 
-// Deposit 充值
-func (a *AppREST) Deposit(rw web.ResponseWriter, req *web.Request) {
-	return
-}
-
-// Withdrawals 提现
-func (a *AppREST) Withdrawals(rw web.ResponseWriter, req *web.Request) {
-	return
-}
-
 // login confirms the account and secret password of the client with the
 // CA and stores the enrollment certificate and key in the Devops server.
 func (a *AppREST) Login(rw web.ResponseWriter, req *web.Request) {
@@ -1490,4 +1481,21 @@ func (a *AppREST) IsLogin(rw web.ResponseWriter, req *web.Request) {
 	myLogger.Debugf("IsLogin successful for user '%s'.", enrollID)
 
 	myLogger.Debug("------------- islogin Done")
+}
+
+// Users Users
+func (a *AppREST) Users(rw web.ResponseWriter, req *web.Request) {
+	myLogger.Debug("------------- users...")
+	encoder := json.NewEncoder(rw)
+
+	rw.WriteHeader(http.StatusOK)
+	encoder.Encode(restResp{
+		Status: SUCCESS,
+		Result: struct {
+			Users []string `json:"users"`
+		}{
+			viper.GetStringSlice("app.users"),
+		}})
+
+	myLogger.Debug("------------- users Done")
 }
