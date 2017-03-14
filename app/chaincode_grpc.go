@@ -29,9 +29,8 @@ func initNVP() (err error) {
 		return
 	}
 
-	name := viper.GetString("app.admin.name")
 	pwd := viper.GetString("app.admin.pwd")
-	adminInvoker, err = setCryptoClient(name, pwd)
+	adminInvoker, err = setCryptoClient(admin, pwd)
 	if err != nil {
 		myLogger.Errorf("Failed getting invoker [%s]", err)
 		return
@@ -89,14 +88,14 @@ func confidentiality(enabled bool) {
 	}
 }
 
-func deployInternal() (resp *pb.Response, err error) {
+func deployChaincodeGrpc() (resp *pb.Response, err error) {
 	chaincodePath = viper.GetString("chaincode.id.path")
 	// Prepare the spec
 	spec := &pb.ChaincodeSpec{
 		Type:        pb.ChaincodeSpec_GOLANG,
 		ChaincodeID: &pb.ChaincodeID{Path: chaincodePath},
 		CtorMsg:     &pb.ChaincodeInput{Args: util.ToChaincodeArgs("init")},
-		// Metadata:             "",
+		// SecureContext:        secureContext,
 		ConfidentialityLevel: confidentialityLevel,
 	}
 
@@ -122,7 +121,7 @@ func deployInternal() (resp *pb.Response, err error) {
 	return
 }
 
-func invokeChaincodeSigma(invoker crypto.Client, invokerCert crypto.CertificateHandler, chaincodeInput *pb.ChaincodeInput) (result string, err error) {
+func invokeChaincodeSigma(secureContext string, invoker crypto.Client, invokerCert crypto.CertificateHandler, chaincodeInput *pb.ChaincodeInput) (result string, err error) {
 	myLogger.Debug("------------- invoke...")
 	// Get a transaction handler to be used to submit the execute transaction
 	// and bind the chaincode access control logic using the binding
@@ -182,7 +181,7 @@ func invokeChaincodeSigma(invoker crypto.Client, invokerCert crypto.CertificateH
 	return string(resp.Msg), nil
 }
 
-func invokeChaincode(invoker crypto.Client, chaincodeInput *pb.ChaincodeInput) (result string, err error) {
+func invokeChaincodeGrpc(secureContext string, invoker crypto.Client, chaincodeInput *pb.ChaincodeInput) (result string, err error) {
 	myLogger.Debug("------------- invoke...")
 	// Get a transaction handler to be used to submit the execute transaction
 	// and bind the chaincode access control logic using the binding
@@ -201,6 +200,7 @@ func invokeChaincode(invoker crypto.Client, chaincodeInput *pb.ChaincodeInput) (
 		ChaincodeID: &pb.ChaincodeID{Name: chaincodeName},
 		CtorMsg:     chaincodeInput,
 		// Metadata:             sigma, // Proof of identity
+		SecureContext:        secureContext,
 		ConfidentialityLevel: confidentialityLevel,
 	}
 
@@ -227,7 +227,7 @@ func invokeChaincode(invoker crypto.Client, chaincodeInput *pb.ChaincodeInput) (
 	return string(resp.Msg), nil
 }
 
-func queryChaincode(chaincodeInput *pb.ChaincodeInput) (result string, err error) {
+func queryChaincodeGrpc(secureContext string, chaincodeInput *pb.ChaincodeInput) (result string, err error) {
 	myLogger.Debug("Query....")
 
 	// Prepare spec and submit
@@ -235,6 +235,7 @@ func queryChaincode(chaincodeInput *pb.ChaincodeInput) (result string, err error
 		Type:                 pb.ChaincodeSpec_GOLANG,
 		ChaincodeID:          &pb.ChaincodeID{Name: chaincodeName},
 		CtorMsg:              chaincodeInput,
+		SecureContext:        secureContext,
 		ConfidentialityLevel: confidentialityLevel,
 	}
 

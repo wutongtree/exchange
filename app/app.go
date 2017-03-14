@@ -188,7 +188,7 @@ func (a *AppREST) Create(rw web.ResponseWriter, req *web.Request) {
 
 	currency.User = enrollID
 	// chaincode
-	txid, err := createCurrencyRestful(enrollID, currency.ID, int64(round(currency.Count, 6)*Multiple), currency.User)
+	txid, err := createCurrency(currency.ID, int64(round(currency.Count, 6)*Multiple), currency.User)
 	if err != nil {
 		rw.WriteHeader(http.StatusBadRequest)
 		encoder.Encode(restResp{Status: FAILED, Result: respErr{Code: SYSERR, Msg: "create Currency failed"}})
@@ -249,7 +249,7 @@ func (a *AppREST) Currency(rw web.ResponseWriter, req *web.Request) {
 
 	encoder := json.NewEncoder(rw)
 
-	enrollID, err := checkLogin(req)
+	_, err := checkLogin(req)
 	if err != nil {
 		rw.WriteHeader(http.StatusBadRequest)
 		encoder.Encode(restResp{Status: FAILED, Result: respErr{Code: NOTLOGIN, Msg: err.Error()}})
@@ -266,7 +266,7 @@ func (a *AppREST) Currency(rw web.ResponseWriter, req *web.Request) {
 	}
 	myLogger.Debugf("Get currency parameter id = %s", id)
 
-	result, _ := getCurrencyRestful(enrollID, id)
+	result, _ := getCurrency(id)
 	// if err != nil {
 	// 	rw.WriteHeader(http.StatusBadRequest)
 	// 	encoder.Encode(restResp{Status: FAILED, Result: respErr{Code: SYSERR, Msg: "Get currency failed"}})
@@ -307,7 +307,7 @@ func (a *AppREST) Currencys(rw web.ResponseWriter, req *web.Request) {
 
 	encoder := json.NewEncoder(rw)
 
-	enrollID, err := checkLogin(req)
+	_, err := checkLogin(req)
 	if err != nil {
 		rw.WriteHeader(http.StatusBadRequest)
 		encoder.Encode(restResp{Status: FAILED, Result: respErr{Code: NOTLOGIN, Msg: err.Error()}})
@@ -315,7 +315,7 @@ func (a *AppREST) Currencys(rw web.ResponseWriter, req *web.Request) {
 		return
 	}
 
-	result, _ := getCurrencysRestful(enrollID)
+	result, _ := getCurrencys()
 	// if err != nil {
 	// 	rw.WriteHeader(http.StatusBadRequest)
 	// 	encoder.Encode(restResp{Status: FAILED, Result: respErr{Code: SYSERR, Msg: "Get currency failed"}})
@@ -361,7 +361,7 @@ func (s *AppREST) MyCurrency(rw web.ResponseWriter, req *web.Request) {
 	}
 
 	// 获取个人币
-	result, _ := getCurrencysByUserRestful(enrollID, enrollID)
+	result, _ := getCurrencysByUser(enrollID)
 	// if err != nil {
 	// 	rw.WriteHeader(http.StatusBadRequest)
 	// 	encoder.Encode(restResp{Status: FAILED, Msg: respErr{Code: SYSERR, Msg: "Get currency failed"}})
@@ -412,7 +412,7 @@ func (s *AppREST) MyAsset(rw web.ResponseWriter, req *web.Request) {
 	}
 
 	// 获取个人资产
-	result, _ := getAssetRestful(enrollID, enrollID)
+	result, _ := getAsset(enrollID)
 	if err != nil {
 		rw.WriteHeader(http.StatusBadRequest)
 		encoder.Encode(restResp{Status: FAILED, Result: respErr{Code: SYSERR, Msg: "Get owner asset failed"}})
@@ -570,7 +570,7 @@ func (a *AppREST) History(rw web.ResponseWriter, req *web.Request) {
 	}
 
 	// 获取个人币
-	result, _ := getCurrencysByUserRestful(enrollID, enrollID)
+	result, _ := getCurrencysByUser(enrollID)
 	myCurrency := []Currency{}
 	if len(result) > 0 {
 		json.Unmarshal([]byte(result), &myCurrency)
@@ -589,7 +589,7 @@ func (a *AppREST) History(rw web.ResponseWriter, req *web.Request) {
 	}
 
 	// 增加币
-	releaseLog, _ := getMyReleaseLogRestful(enrollID, enrollID)
+	releaseLog, _ := getMyReleaseLog(enrollID)
 	logRelease := []struct {
 		Currency    string  `json:"currency"`
 		Count       float64 `json:"cont"`
@@ -611,7 +611,7 @@ func (a *AppREST) History(rw web.ResponseWriter, req *web.Request) {
 	}
 
 	// 分发币 // 接收币
-	assignLog, _ := getMyAssignLogRestful(enrollID, enrollID)
+	assignLog, _ := getMyAssignLog(enrollID)
 
 	type Assign struct {
 		Currency   string `json:"currency`
@@ -860,7 +860,7 @@ func (a *AppREST) Release(rw web.ResponseWriter, req *web.Request) {
 
 	currency.User = enrollID
 	// chaincode
-	txid, err := releaseCurrencyRestful(enrollID, currency.ID, int64(round(currency.Count, 6)*Multiple), currency.User)
+	txid, err := releaseCurrency(currency.ID, int64(round(currency.Count, 6)*Multiple), currency.User)
 	if err != nil {
 		rw.WriteHeader(http.StatusBadRequest)
 		encoder.Encode(restResp{Status: FAILED, Result: respErr{Code: SYSERR, Msg: "release Currency failed"}})
@@ -983,7 +983,7 @@ func (a *AppREST) Assign(rw web.ResponseWriter, req *web.Request) {
 
 	assigns, _ := json.Marshal(&assign)
 	// chaincode
-	txid, err := assignCurrencyRestful(enrollID, string(assigns), enrollID)
+	txid, err := assignCurrency(string(assigns), enrollID)
 	if err != nil {
 		rw.WriteHeader(http.StatusBadRequest)
 		encoder.Encode(restResp{Status: FAILED, Result: respErr{Code: SYSERR, Msg: "assign Currency failed"}})
@@ -1397,8 +1397,11 @@ func (a *AppREST) Login(rw web.ResponseWriter, req *web.Request) {
 		return
 	}
 
-	// _, err = setCryptoClient(loginRequest.EnrollID, loginRequest.EnrollSecret)
-	err = loginRestful(reqBody)
+	if connPeer == "grpc" {
+		_, err = setCryptoClient(loginRequest.EnrollID, loginRequest.EnrollSecret)
+	} else {
+		err = loginRest(reqBody)
+	}
 	if err != nil {
 		rw.WriteHeader(http.StatusBadRequest)
 		encoder.Encode(restResp{Status: FAILED, Result: respErr{Code: SYSERR, Msg: "username or pwd is wrong"}})
@@ -1407,7 +1410,7 @@ func (a *AppREST) Login(rw web.ResponseWriter, req *web.Request) {
 	}
 
 	// 初始化账户资产信息
-	_, err = initAccountRestful(loginRequest.EnrollID, loginRequest.EnrollID)
+	_, err = initAccount(loginRequest.EnrollID)
 	if err != nil {
 		rw.WriteHeader(http.StatusBadRequest)
 		encoder.Encode(restResp{Status: FAILED, Result: respErr{Code: SYSERR, Msg: "init account failed"}})

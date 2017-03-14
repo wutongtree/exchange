@@ -19,11 +19,6 @@ type LockInfo struct {
 func lockBalance() {
 	batch := viper.GetInt64("redis.batch.pending")
 	sleep := viper.GetDuration("app.task.polling.lock")
-	securityContext := viper.GetString("app.admin.name")
-	if securityContext == "" {
-		myLogger.Errorf("no securityContext for lockBalance...")
-		return
-	}
 
 	for {
 		// 1.取出待挂单
@@ -36,7 +31,7 @@ func lockBalance() {
 
 		// 2.调用chaincode锁定相关信息
 		lockInfo := getLockInfo(uuids)
-		lockRestful(securityContext, lockInfo, true, "lock")
+		lock(lockInfo, true, "lock")
 
 		time.Sleep(sleep * time.Second)
 	}
@@ -128,11 +123,6 @@ type ExchangeOrder struct {
 func execTx() {
 	batch := viper.GetInt64("redis.batch.matched")
 	sleep := viper.GetDuration("app.task.polling.exec")
-	securityContext := viper.GetString("app.admin.name")
-	if securityContext == "" {
-		myLogger.Errorf("no securityContext for lockBalance...")
-		return
-	}
 
 	for {
 		// 1.取出撮合好的一对交易
@@ -197,7 +187,7 @@ func execTx() {
 		}
 		exchangeStr, _ := json.Marshal(&exchanges)
 
-		exchangeRestful(securityContext, string(exchangeStr))
+		exchange(string(exchangeStr))
 
 		time.Sleep(sleep * time.Second)
 	}
@@ -228,11 +218,6 @@ func dealExpired(uuids ...string) {
 func execExpired(uuid ...string) {
 	batch := viper.GetInt64("redis.batch.expired")
 	sleep := viper.GetDuration("app.task.polling.expired")
-	securityContext := viper.GetString("app.admin.name")
-	if securityContext == "" {
-		myLogger.Errorf("no securityContext for lockBalance...")
-		return
-	}
 
 	for {
 		// 1.从过期队列中取出一个
@@ -245,7 +230,7 @@ func execExpired(uuid ...string) {
 
 		// 2.chaincode处理过期交易
 		lockInfo := getLockInfo(uuids)
-		lockRestful(securityContext, lockInfo, false, "expire")
+		lock(lockInfo, false, "expire")
 
 		time.Sleep(sleep * time.Second)
 	}
@@ -303,11 +288,6 @@ func checkExpired(uuid string) (*Order, bool) {
 func execCancel() {
 	batch := viper.GetInt64("redis.batch.cancel")
 	sleep := viper.GetDuration("app.task.polling.cancel")
-	securityContext := viper.GetString("app.admin.name")
-	if securityContext == "" {
-		myLogger.Errorf("no securityContext for lockBalance...")
-		return
-	}
 
 	for {
 		// 1.从撤单队列中取出一个
@@ -320,7 +300,7 @@ func execCancel() {
 
 		// 2.chaincode处理撤销交易
 		lockInfo := getLockInfo(uuids)
-		lockRestful(securityContext, lockInfo, false, "cancel")
+		lock(lockInfo, false, "cancel")
 
 		time.Sleep(sleep * time.Second)
 	}

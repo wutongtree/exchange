@@ -1,14 +1,11 @@
 package main
 
 import (
-	"bytes"
 	"encoding/json"
 	"fmt"
-	"io/ioutil"
-	"net/http"
-	"strconv"
 	"time"
 
+	"github.com/hyperledger/fabric/core/util"
 	pb "github.com/hyperledger/fabric/protos"
 	"github.com/spf13/viper"
 )
@@ -18,38 +15,12 @@ type loginResponse struct {
 	Error string `json:"Error,omitempty"`
 }
 
-// Carries the chaincode function and its arguments.
-// UnmarshalJSON in transaction.go converts the string-based REST/JSON input to
-// the []byte-based current ChaincodeInput structure.
-type ChaincodeInput struct {
-	Function string   `protobuf:"bytes,1,rep,name=function,proto3" json:"function,omitempty"`
-	Args     []string `protobuf:"bytes,2,rep,name=args,proto3" json:"args,omitempty"`
-}
-
-// Carries the chaincode specification. This is the actual metadata required for
-// defining a chaincode.
-type ChaincodeSpec struct {
-	Type                 pb.ChaincodeSpec_Type   `protobuf:"varint,1,opt,name=type,enum=protos.ChaincodeSpec_Type" json:"type,omitempty"`
-	ChaincodeID          *pb.ChaincodeID         `protobuf:"bytes,2,opt,name=chaincodeID" json:"chaincodeID,omitempty"`
-	CtorMsg              *ChaincodeInput         `protobuf:"bytes,3,opt,name=ctorMsg" json:"ctorMsg,omitempty"`
-	Timeout              int32                   `protobuf:"varint,4,opt,name=timeout" json:"timeout,omitempty"`
-	SecureContext        string                  `protobuf:"bytes,5,opt,name=secureContext" json:"secureContext,omitempty"`
-	ConfidentialityLevel pb.ConfidentialityLevel `protobuf:"varint,6,opt,name=confidentialityLevel,enum=protos.ConfidentialityLevel" json:"confidentialityLevel,omitempty"`
-	Metadata             []byte                  `protobuf:"bytes,7,opt,name=metadata,proto3" json:"metadata,omitempty"`
-	Attributes           []string                `protobuf:"bytes,8,rep,name=attributes" json:"attributes,omitempty"`
-}
-
 // rpcRequest defines the JSON RPC 2.0 request payload for the /chaincode endpoint.
 type rpcRequest struct {
-	Jsonrpc string         `json:"jsonrpc,omitempty"`
-	Method  string         `json:"method,omitempty"`
-	Params  *ChaincodeSpec `json:"params,omitempty"`
-	ID      int64          `json:"id,omitempty"`
-}
-
-type rpcID struct {
-	StringValue string
-	IntValue    int64
+	Jsonrpc string            `json:"jsonrpc,omitempty"`
+	Method  string            `json:"method,omitempty"`
+	Params  *pb.ChaincodeSpec `json:"params,omitempty"`
+	ID      int64             `json:"id,omitempty"`
 }
 
 // rpcResponse defines the JSON RPC 2.0 response payload for the /chaincode endpoint.
@@ -80,46 +51,7 @@ type rpcError struct {
 	Data string `json:"data,omitempty"`
 }
 
-func doHTTPPost(url string, reqBody []byte) ([]byte, error) {
-	resp, err := http.Post(url, "application/json;charset=utf-8", bytes.NewBuffer(reqBody))
-	if err != nil {
-		return nil, err
-	}
-
-	defer resp.Body.Close()
-	return ioutil.ReadAll(resp.Body)
-}
-
-func loginRestful(reqBody []byte) (err error) {
-	myLogger.Debug("------------- login -------------")
-
-	respBody, err := doHTTPPost(restURL+"registrar", reqBody)
-	if err != nil {
-		myLogger.Errorf("Failed login [%s]", err)
-		return
-	}
-
-	result := new(loginResponse)
-	err = json.Unmarshal(respBody, result)
-	if err != nil {
-		myLogger.Errorf("Failed login [%s]", err)
-		return
-	}
-
-	myLogger.Debugf("Resp [%s]", string(respBody))
-
-	if result.Error != "" {
-		myLogger.Errorf("Failed login [%s]", result.Error)
-		return
-	}
-
-	myLogger.Infof("Successful login [%s]", result.OK)
-	myLogger.Debug("------------- login! -------------")
-
-	return
-}
-
-func deployChaincodeRestful() (err error) {
+func deployChaincodeRest() (err error) {
 	myLogger.Debug("------------- deploy chaincode -------------")
 
 	chaincodeName = viper.GetString("chaincode.id.name")
@@ -142,7 +74,7 @@ func deployChaincodeRestful() (err error) {
 		EnrollSecret: pwd,
 	}
 	loginReqBody, err := json.Marshal(loginRequest)
-	err = loginRestful(loginReqBody)
+	err = loginRest(loginReqBody)
 	if err != nil {
 		myLogger.Errorf("Failed login [%s]", err)
 		return
@@ -151,20 +83,14 @@ func deployChaincodeRestful() (err error) {
 	request := &rpcRequest{
 		Jsonrpc: "2.0",
 		Method:  "deploy",
-		Params: &ChaincodeSpec{
+		Params: &pb.ChaincodeSpec{
 			Type: pb.ChaincodeSpec_GOLANG,
 			ChaincodeID: &pb.ChaincodeID{
 				Path: chaincodePath,
 			},
-			CtorMsg: &ChaincodeInput{
-				Function: "init",
-				Args:     []string{},
-			},
-			//Timeout:1,
+			CtorMsg:              &pb.ChaincodeInput{Args: util.ToChaincodeArgs("init")},
 			SecureContext:        name,
 			ConfidentialityLevel: confidentialityLevel,
-			// Metadata:             adminCert.GetCertificate(),
-			//Attributes:[]string{},
 		},
 		ID: time.Now().Unix(),
 	}
@@ -175,7 +101,7 @@ func deployChaincodeRestful() (err error) {
 		return
 	}
 
-	respBody, err := doHTTPPost(restURL+"chaincode", reqBody)
+	respBody, err := doHTTPPost(restURL+"/chaincode", reqBody)
 	if err != nil {
 		myLogger.Errorf("Failed deploying [%s]", err)
 		return
@@ -206,23 +132,20 @@ func deployChaincodeRestful() (err error) {
 	return
 }
 
-func invokeChaincodeRestful(secureContext string, chaincodeInput *ChaincodeInput) (ret string, err error) {
+func invokeChaincodeRest(secureContext string, chaincodeInput *pb.ChaincodeInput) (ret string, err error) {
 	myLogger.Debug("------------- invoke chainde -------------")
 
 	request := &rpcRequest{
 		Jsonrpc: "2.0",
 		Method:  "invoke",
-		Params: &ChaincodeSpec{
+		Params: &pb.ChaincodeSpec{
 			Type: pb.ChaincodeSpec_GOLANG,
 			ChaincodeID: &pb.ChaincodeID{
 				Name: chaincodeName,
 			},
-			CtorMsg: chaincodeInput,
-			//Timeout:1,
+			CtorMsg:              chaincodeInput,
 			SecureContext:        secureContext,
 			ConfidentialityLevel: confidentialityLevel,
-			// Metadata:             adminCert.GetCertificate(),
-			//Attributes:[]string{},
 		},
 		ID: time.Now().Unix(),
 	}
@@ -233,7 +156,7 @@ func invokeChaincodeRestful(secureContext string, chaincodeInput *ChaincodeInput
 		return
 	}
 
-	respBody, err := doHTTPPost(restURL+"chaincode", reqBody)
+	respBody, err := doHTTPPost(restURL+"/chaincode", reqBody)
 	if err != nil {
 		myLogger.Errorf("Failed invoke [%s]", err)
 		return
@@ -265,23 +188,20 @@ func invokeChaincodeRestful(secureContext string, chaincodeInput *ChaincodeInput
 	return
 }
 
-func queryChaincodeRestful(secureContext string, chaincodeInput *ChaincodeInput) (ret string, err error) {
+func queryChaincodeRest(secureContext string, chaincodeInput *pb.ChaincodeInput) (ret string, err error) {
 	myLogger.Debug("------------- invoke chainde -------------")
 
 	request := &rpcRequest{
 		Jsonrpc: "2.0",
 		Method:  "query",
-		Params: &ChaincodeSpec{
+		Params: &pb.ChaincodeSpec{
 			Type: pb.ChaincodeSpec_GOLANG,
 			ChaincodeID: &pb.ChaincodeID{
 				Name: chaincodeName,
 			},
-			CtorMsg: chaincodeInput,
-			//Timeout:1,
+			CtorMsg:              chaincodeInput,
 			SecureContext:        secureContext,
 			ConfidentialityLevel: confidentialityLevel,
-			// Metadata:             adminCert.GetCertificate(),
-			//Attributes:[]string{},
 		},
 		ID: time.Now().Unix(),
 	}
@@ -292,7 +212,7 @@ func queryChaincodeRestful(secureContext string, chaincodeInput *ChaincodeInput)
 		return
 	}
 
-	respBody, err := doHTTPPost(restURL+"chaincode", reqBody)
+	respBody, err := doHTTPPost(restURL+"/chaincode", reqBody)
 	if err != nil {
 		myLogger.Errorf("Failed invoke [%s]", err)
 		return
@@ -328,130 +248,31 @@ func queryChaincodeRestful(secureContext string, chaincodeInput *ChaincodeInput)
 	return
 }
 
-// bz
-func createCurrencyRestful(secureContext, currency string, count int64, user string) (txid string, err error) {
-	myLogger.Debugf("Chaincode [createCurrency] args:[%s]-[%s],[%s]-[%s]", "currency", currency, "count", count)
+func loginRest(reqBody []byte) (err error) {
+	myLogger.Debug("------------- login -------------")
 
-	chaincodeInput := &ChaincodeInput{
-		Function: "createCurrency",
-		Args:     []string{currency, strconv.FormatInt(count, 10), user}}
+	respBody, err := doHTTPPost(restURL+"/registrar", reqBody)
+	if err != nil {
+		myLogger.Errorf("Failed login [%s]", err)
+		return
+	}
 
-	return invokeChaincodeRestful(secureContext, chaincodeInput)
-}
+	result := new(loginResponse)
+	err = json.Unmarshal(respBody, result)
+	if err != nil {
+		myLogger.Errorf("Failed login [%s]", err)
+		return
+	}
 
-func releaseCurrencyRestful(secureContext, currency string, count int64, user string) (txid string, err error) {
-	myLogger.Debugf("Chaincode [releaseCurrency] args:[%s]-[%s],[%s]-[%s]", "currency", currency, "count", count)
+	myLogger.Debugf("Resp [%s]", string(respBody))
 
-	chaincodeInput := &ChaincodeInput{
-		Function: "releaseCurrency",
-		Args:     []string{currency, strconv.FormatInt(count, 10)}}
+	if result.Error != "" {
+		myLogger.Errorf("Failed login [%s]", result.Error)
+		return
+	}
 
-	return invokeChaincodeRestful(secureContext, chaincodeInput)
-}
+	myLogger.Infof("Successful login [%s]", result.OK)
+	myLogger.Debug("------------- login! -------------")
 
-func assignCurrencyRestful(secureContext, assigns string, user string) (txid string, err error) {
-	myLogger.Debugf("Chaincode [assignCurrency] args:[%s]-[%s]", "assigns", assigns)
-
-	chaincodeInput := &ChaincodeInput{
-		Function: "assignCurrency",
-		Args:     []string{assigns}}
-
-	return invokeChaincodeRestful(secureContext, chaincodeInput)
-}
-
-func exchangeRestful(secureContext, exchanges string) (err error) {
-	myLogger.Debugf("Chaincode [exchange] args:[%s]-[%s]", "exchanges", exchanges)
-
-	chaincodeInput := &ChaincodeInput{
-		Function: "exchange",
-		Args:     []string{exchanges}}
-
-	_, err = invokeChaincodeRestful(secureContext, chaincodeInput)
 	return
-}
-
-func lockRestful(secureContext, orders string, islock bool, srcMethod string) (txid string, err error) {
-	myLogger.Debugf("Chaincode [lock] args:[%s]-[%s],[%s]-[%s],[%s]-[%s]", "orders", orders, "islock", islock, "srcMethod", srcMethod)
-
-	chaincodeInput := &ChaincodeInput{
-		Function: "lock",
-		Args:     []string{orders, strconv.FormatBool(islock), srcMethod}}
-
-	return invokeChaincodeRestful(secureContext, chaincodeInput)
-}
-
-func getCurrencysRestful(secureContext string) (currencys string, err error) {
-	chaincodeInput := &ChaincodeInput{
-		Function: "queryAllCurrency",
-		Args:     []string{}}
-
-	return queryChaincodeRestful(secureContext, chaincodeInput)
-}
-
-func getCurrencyRestful(secureContext, id string) (currency string, err error) {
-	myLogger.Debugf("Chaincode [queryCurrencyByID] args:[%s]-[%s]", "id", id)
-
-	chaincodeInput := &ChaincodeInput{
-		Function: "queryCurrencyByID",
-		Args:     []string{id}}
-
-	return queryChaincodeRestful(secureContext, chaincodeInput)
-}
-
-func getCurrencysByUserRestful(secureContext, user string) (currencys string, err error) {
-	myLogger.Debugf("Chaincode [getCurrencysByUser] args:[%s]-[%s]", "user", user)
-
-	chaincodeInput := &ChaincodeInput{
-		Function: "queryMyCurrency",
-		Args:     []string{user}}
-
-	return queryChaincodeRestful(secureContext, chaincodeInput)
-}
-
-func getAssetRestful(secureContext, owner string) (asset string, err error) {
-	myLogger.Debugf("Chaincode [queryAssetByOwner] args:[%s]-[%s]", "owner", owner)
-	chaincodeInput := &ChaincodeInput{
-		Function: "queryAssetByOwner",
-		Args:     []string{owner}}
-
-	return queryChaincodeRestful(secureContext, chaincodeInput)
-}
-
-func getTxLogsRestful(secureContext string) (txLogs string, err error) {
-	chaincodeInput := &ChaincodeInput{
-		Function: "queryTxLogs",
-		Args:     []string{}}
-
-	return queryChaincodeRestful(secureContext, chaincodeInput)
-}
-
-func initAccountRestful(secureContext string, user string) (result string, err error) {
-	myLogger.Debugf("Chaincode [initAccount] args:[%s]-[%s]", "initAccount", user)
-
-	chaincodeInput := &ChaincodeInput{
-		Function: "initAccount",
-		Args:     []string{user}}
-
-	_, err = invokeChaincodeRestful(secureContext, chaincodeInput)
-	return
-}
-
-func getMyReleaseLogRestful(secureContext, user string) (log string, err error) {
-	myLogger.Debugf("Chaincode [getMyReleaseLog] args:[%s]-[%s]", "user", user)
-
-	chaincodeInput := &ChaincodeInput{
-		Function: "queryMyReleaseLog",
-		Args:     []string{user}}
-
-	return queryChaincodeRestful(secureContext, chaincodeInput)
-}
-
-func getMyAssignLogRestful(secureContext, user string) (log string, err error) {
-	myLogger.Debugf("Chaincode [getMyAssignLog] args:[%s]-[%s]", "user", user)
-
-	chaincodeInput := &ChaincodeInput{
-		Function: "queryMyAssignLog",
-		Args:     []string{user}}
-
-	return queryChaincodeRestful(secureContext, chaincodeInput)
 }

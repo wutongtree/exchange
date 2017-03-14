@@ -8,7 +8,6 @@ import (
 
 	"github.com/gocraft/web"
 	"github.com/hyperledger/fabric/core/crypto"
-	"github.com/hyperledger/fabric/core/crypto/primitives"
 	"github.com/op/go-logging"
 	"github.com/spf13/viper"
 )
@@ -20,7 +19,9 @@ var (
 	myLogger = logging.MustGetLogger("app")
 
 	// chaincode url
-	restURL string
+	restURL  string
+	connPeer string
+	admin    string
 )
 
 func buildRouter() *web.Router {
@@ -84,21 +85,28 @@ func main() {
 	initRedis()
 	defer client.Close()
 
-	primitives.SetSecurityLevel("SHA3", 256)
-	// if err := initNVP(); err != nil {
-	// 	myLogger.Debugf("Failed initiliazing NVP [%s]", err)
-	// 	os.Exit(-1)
-	// }
+	// primitives.SetSecurityLevel("SHA3", 256)
+	admin = viper.GetString("app.admin.name")
+	connPeer = viper.GetString("app.connpeer")
+	if connPeer == "grpc" {
+		if err := initNVP(); err != nil {
+			myLogger.Errorf("Failed initiliazing NVP [%s]", err)
+			os.Exit(-1)
+		}
+	} else if connPeer == "rest" {
+		restURL = viper.GetString("rest.address")
+	} else {
+		myLogger.Errorf("connPeer not know")
+		os.Exit(-1)
+	}
 
 	crypto.Init()
 
 	// Enable fabric 'confidentiality'
 	confidentiality(viper.GetBool("security.privacy"))
 
-	restURL = viper.GetString("rest.address")
-
 	// Deploy
-	if err := deployChaincodeRestful(); err != nil {
+	if err := deployChaincodeRest(); err != nil {
 		myLogger.Errorf("Failed deploying [%s]", err)
 		os.Exit(-1)
 	}

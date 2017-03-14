@@ -1,8 +1,11 @@
 package main
 
 import (
+	"bytes"
 	"encoding/json"
+	"io/ioutil"
 	"math"
+	"net/http"
 	"strconv"
 	"strings"
 )
@@ -12,37 +15,6 @@ func isJSON(s string) bool {
 	var js map[string]interface{}
 	return json.Unmarshal([]byte(s), &js) == nil
 }
-
-// // formatRPCError formats the ERROR response to aid in JSON RPC 2.0 implementation
-// func formatError(code int64, msg string, data string) rpcResult {
-// 	err := &rpcError{Code: code, Message: msg, Data: data}
-// 	error := rpcResult{Status: "Error", Error: err}
-
-// 	return error
-// }
-
-// // formatRPCOK formats the OK response to aid in JSON RPC 2.0 implementation
-// func formatOK(msg string) rpcResult {
-// 	result := rpcResult{Status: "OK", Message: msg}
-
-// 	return result
-// }
-
-// // formatRPCResponse consumes either an RPC ERROR or OK rpcResult and formats it
-// // in accordance with the JSON RPC 2.0 specification.
-// func formatResponse(res rpcResult, id *rpcID) rpcResponse {
-// 	var response rpcResponse
-
-// 	// Format a successful response
-// 	if res.Status == "OK" {
-// 		response = rpcResponse{Jsonrpc: "2.0", Result: &res, ID: id}
-// 	} else {
-// 		// Format an error response
-// 		response = rpcResponse{Jsonrpc: "2.0", Error: res.Error, ID: id}
-// 	}
-
-// 	return response
-// }
 
 func convertInteger2Decimal(num int64) float64 {
 	nStr := strconv.FormatInt(num, 10)
@@ -109,3 +81,13 @@ type Historys []*History
 func (x Historys) Len() int           { return len(x) }
 func (x Historys) Less(i, j int) bool { return x[i].Time > x[j].Time }
 func (x Historys) Swap(i, j int)      { x[i], x[j] = x[j], x[i] }
+
+func doHTTPPost(url string, reqBody []byte) ([]byte, error) {
+	resp, err := http.Post(url, "application/json;charset=utf-8", bytes.NewBuffer(reqBody))
+	if err != nil {
+		return nil, err
+	}
+
+	defer resp.Body.Close()
+	return ioutil.ReadAll(resp.Body)
+}

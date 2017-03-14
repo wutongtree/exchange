@@ -19,7 +19,7 @@ var (
 func deploy() (err error) {
 	myLogger.Debug("------------- deploy")
 
-	resp, err := deployInternal()
+	resp, err := deployChaincodeGrpc()
 	if err != nil {
 		myLogger.Errorf("Failed deploying [%s]", err)
 		return
@@ -46,12 +46,16 @@ func createCurrency(currency string, count int64, user string) (txid string, err
 	// 	myLogger.Errorf("Failed getting TCert [%s]", err)
 	// 	return
 	// }
-	myLogger.Debugf("Chaincode [createCurrency] args:[%s]-[%s],[%s]-[%s]", "currency", currency, "count", count)
+	myLogger.Debugf("Chaincode [create] args:[%s]-[%s],[%s]-[%s]", "currency", currency, "count", count)
 
 	// chaincodeInput := &pb.ChaincodeInput{Args: util.ToChaincodeArgs("createCurrency", currency, strconv.FormatInt(count, 10), base64.StdEncoding.EncodeToString(invokerCert.GetCertificate()))}
-	chaincodeInput := &pb.ChaincodeInput{Args: util.ToChaincodeArgs("createCurrency", currency, strconv.FormatInt(count, 10), user)}
+	chaincodeInput := &pb.ChaincodeInput{Args: util.ToChaincodeArgs("create", currency, strconv.FormatInt(count, 10), user)}
 
-	return invokeChaincode(invoker, chaincodeInput)
+	if connPeer == "grpc" {
+		return invokeChaincodeGrpc(user, invoker, chaincodeInput)
+	}
+	return invokeChaincodeRest(user, chaincodeInput)
+
 }
 
 func releaseCurrency(currency string, count int64, user string) (txid string, err error) {
@@ -65,12 +69,16 @@ func releaseCurrency(currency string, count int64, user string) (txid string, er
 	// 	myLogger.Errorf("Failed getting TCert [%s]", err)
 	// 	return
 	// }
-	myLogger.Debugf("Chaincode [releaseCurrency] args:[%s]-[%s],[%s]-[%s]", "currency", currency, "count", count)
+	myLogger.Debugf("Chaincode [release] args:[%s]-[%s],[%s]-[%s]", "currency", currency, "count", count)
 
-	chaincodeInput := &pb.ChaincodeInput{Args: util.ToChaincodeArgs("releaseCurrency", currency, strconv.FormatInt(count, 10))}
+	chaincodeInput := &pb.ChaincodeInput{Args: util.ToChaincodeArgs("release", currency, strconv.FormatInt(count, 10))}
 
 	// return invokeChaincodeSigma(invoker, invokerCert, chaincodeInput)
-	return invokeChaincode(invoker, chaincodeInput)
+	if connPeer == "grpc" {
+		return invokeChaincodeGrpc(user, invoker, chaincodeInput)
+	}
+	return invokeChaincodeRest(user, chaincodeInput)
+
 }
 
 func assignCurrency(assigns string, user string) (txid string, err error) {
@@ -84,12 +92,16 @@ func assignCurrency(assigns string, user string) (txid string, err error) {
 	// 	myLogger.Errorf("Failed getting TCert [%s]", err)
 	// 	return
 	// }
-	myLogger.Debugf("Chaincode [assignCurrency] args:[%s]-[%s]", "assigns", assigns)
+	myLogger.Debugf("Chaincode [assign] args:[%s]-[%s]", "assigns", assigns)
 
-	chaincodeInput := &pb.ChaincodeInput{Args: util.ToChaincodeArgs("assignCurrency", assigns)}
+	chaincodeInput := &pb.ChaincodeInput{Args: util.ToChaincodeArgs("assign", assigns)}
 
 	// return invokeChaincodeSigma(invoker, invokerCert, chaincodeInput)
-	return invokeChaincode(invoker, chaincodeInput)
+	if connPeer == "grpc" {
+		return invokeChaincodeGrpc(user, invoker, chaincodeInput)
+	}
+	return invokeChaincodeRest(user, chaincodeInput)
+
 }
 
 func exchange(exchanges string) (err error) {
@@ -97,7 +109,11 @@ func exchange(exchanges string) (err error) {
 
 	chaincodeInput := &pb.ChaincodeInput{Args: util.ToChaincodeArgs("exchange", exchanges)}
 
-	_, err = invokeChaincode(adminInvoker, chaincodeInput)
+	if connPeer == "grpc" {
+		_, err = invokeChaincodeGrpc(admin, adminInvoker, chaincodeInput)
+		return
+	}
+	_, err = invokeChaincodeRest(admin, chaincodeInput)
 	return
 }
 
@@ -106,13 +122,21 @@ func lock(orders string, islock bool, srcMethod string) (txid string, err error)
 
 	chaincodeInput := &pb.ChaincodeInput{Args: util.ToChaincodeArgs("lock", orders, strconv.FormatBool(islock), srcMethod)}
 
-	return invokeChaincode(adminInvoker, chaincodeInput)
+	if connPeer == "grpc" {
+		return invokeChaincodeGrpc(admin, adminInvoker, chaincodeInput)
+	}
+	return invokeChaincodeRest(admin, chaincodeInput)
+
 }
 
 func getCurrencys() (currencys string, err error) {
 	chaincodeInput := &pb.ChaincodeInput{Args: util.ToChaincodeArgs("queryAllCurrency")}
 
-	return queryChaincode(chaincodeInput)
+	if connPeer == "grpc" {
+		return queryChaincodeGrpc(admin, chaincodeInput)
+	}
+	return queryChaincodeRest(admin, chaincodeInput)
+
 }
 
 func getCurrency(id string) (currency string, err error) {
@@ -120,7 +144,11 @@ func getCurrency(id string) (currency string, err error) {
 
 	chaincodeInput := &pb.ChaincodeInput{Args: util.ToChaincodeArgs("queryCurrencyByID", id)}
 
-	return queryChaincode(chaincodeInput)
+	if connPeer == "grpc" {
+		return queryChaincodeGrpc(admin, chaincodeInput)
+	}
+	return queryChaincodeRest(admin, chaincodeInput)
+
 }
 
 func getCurrencysByUser(user string) (currencys string, err error) {
@@ -140,19 +168,31 @@ func getCurrencysByUser(user string) (currencys string, err error) {
 
 	chaincodeInput := &pb.ChaincodeInput{Args: util.ToChaincodeArgs("queryMyCurrency", user)}
 
-	return queryChaincode(chaincodeInput)
+	if connPeer == "grpc" {
+		return queryChaincodeGrpc(user, chaincodeInput)
+	}
+	return queryChaincodeRest(user, chaincodeInput)
+
 }
 
-func getAsset(owner string) (asset string, err error) {
-	myLogger.Debugf("Chaincode [queryAssetByOwner] args:[%s]-[%s]", "owner", owner)
-	chaincodeInput := &pb.ChaincodeInput{Args: util.ToChaincodeArgs("queryAssetByOwner", owner)}
+func getAsset(user string) (asset string, err error) {
+	myLogger.Debugf("Chaincode [queryAssetByOwner] args:[%s]-[%s]", "owner", user)
+	chaincodeInput := &pb.ChaincodeInput{Args: util.ToChaincodeArgs("queryAssetByOwner", user)}
 
-	return queryChaincode(chaincodeInput)
+	if connPeer == "grpc" {
+		return queryChaincodeGrpc(user, chaincodeInput)
+	}
+	return queryChaincodeRest(user, chaincodeInput)
+
 }
 
 func getTxLogs() (txLogs string, err error) {
 	chaincodeInput := &pb.ChaincodeInput{Args: util.ToChaincodeArgs("queryTxLogs")}
-	return queryChaincode(chaincodeInput)
+
+	if connPeer == "grpc" {
+		return queryChaincodeGrpc(admin, chaincodeInput)
+	}
+	return queryChaincodeRest(admin, chaincodeInput)
 }
 
 func initAccount(user string) (result string, err error) {
@@ -160,7 +200,11 @@ func initAccount(user string) (result string, err error) {
 
 	chaincodeInput := &pb.ChaincodeInput{Args: util.ToChaincodeArgs("initAccount", user)}
 
-	_, err = invokeChaincode(adminInvoker, chaincodeInput)
+	if connPeer == "grpc" {
+		_, err = invokeChaincodeGrpc(user, adminInvoker, chaincodeInput)
+		return
+	}
+	_, err = invokeChaincodeRest(user, chaincodeInput)
 	return
 }
 
@@ -169,7 +213,10 @@ func getMyReleaseLog(user string) (log string, err error) {
 
 	chaincodeInput := &pb.ChaincodeInput{Args: util.ToChaincodeArgs("queryMyReleaseLog", user)}
 
-	return queryChaincode(chaincodeInput)
+	if connPeer == "grpc" {
+		return queryChaincodeGrpc(user, chaincodeInput)
+	}
+	return queryChaincodeRest(user, chaincodeInput)
 }
 
 func getMyAssignLog(user string) (log string, err error) {
@@ -177,5 +224,8 @@ func getMyAssignLog(user string) (log string, err error) {
 
 	chaincodeInput := &pb.ChaincodeInput{Args: util.ToChaincodeArgs("queryMyAssignLog", user)}
 
-	return queryChaincode(chaincodeInput)
+	if connPeer == "grpc" {
+		return queryChaincodeGrpc(user, chaincodeInput)
+	}
+	return queryChaincodeRest(user, chaincodeInput)
 }
