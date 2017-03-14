@@ -200,8 +200,8 @@ func queryChaincodeRest(secureContext string, chaincodeInput *pb.ChaincodeInput)
 			ChaincodeID: &pb.ChaincodeID{
 				Name: chaincodeName,
 			},
-			CtorMsg:              chaincodeInput,
-			SecureContext:        secureContext,
+			CtorMsg: chaincodeInput,
+			// SecureContext:        secureContext,
 			ConfidentialityLevel: confidentialityLevel,
 		},
 		ID: time.Now().Unix(),
