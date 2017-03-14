@@ -1,0 +1,1 @@
+const REST_ENDPOINT = "http://23.91.105.254:7050";
