@@ -8,7 +8,6 @@ import (
 
 	"github.com/gocraft/web"
 	"github.com/hyperledger/fabric/core/crypto"
-	"github.com/hyperledger/fabric/core/crypto/primitives"
 	"github.com/op/go-logging"
 	"github.com/spf13/viper"
 )
@@ -86,11 +85,15 @@ func main() {
 	initRedis()
 	defer client.Close()
 
-	primitives.SetSecurityLevel("SHA3", 256)
+	crypto.Init()
+	// Enable fabric 'confidentiality'
+	confidentiality(viper.GetBool("security.privacy"))
 
 	admin = viper.GetString("app.admin.name")
+
 	connPeer = viper.GetString("app.connpeer")
 	myLogger.Debugf("The peer connection type is: %s ", connPeer)
+
 	if connPeer == "grpc" {
 		if err := initNVP(); err != nil {
 			myLogger.Errorf("Failed initiliazing NVP [%s]", err)
@@ -102,11 +105,6 @@ func main() {
 		myLogger.Errorf("connPeer not know")
 		os.Exit(-1)
 	}
-
-	crypto.Init()
-
-	// Enable fabric 'confidentiality'
-	confidentiality(viper.GetBool("security.privacy"))
 
 	// Deploy
 	if err := deploy(); err != nil {
