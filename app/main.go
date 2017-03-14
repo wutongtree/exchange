@@ -90,7 +90,7 @@ func main() {
 	// Enable fabric 'confidentiality'
 	confidentiality(viper.GetBool("security.privacy"))
 
-	admin = viper.GetString("app.admin.name")
+	adminLogin()
 
 	connPeer = viper.GetString("app.connpeer")
 	myLogger.Debugf("The peer connection type is: %s ", connPeer)

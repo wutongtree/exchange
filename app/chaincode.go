@@ -1,10 +1,12 @@
 package main
 
 import (
+	"encoding/json"
 	"strconv"
 
 	"github.com/hyperledger/fabric/core/util"
 	pb "github.com/hyperledger/fabric/protos"
+	"github.com/spf13/viper"
 	"google.golang.org/grpc"
 )
 
@@ -15,11 +17,45 @@ var (
 	chaincodeName  string
 )
 
-func deploy() (err error) {
+func adminLogin() (err error) {
+	admin = viper.GetString("app.admin.name")
+	pwd := viper.GetString("app.admin.pwd")
+
 	if connPeer == "grpc" {
-		return deployChaincodeGrpc()
+		adminInvoker, err = setCryptoClient(admin, pwd)
+		if err != nil {
+			myLogger.Errorf("Failed getting invoker [%s]", err)
+			return
+		}
 	}
-	return deployChaincodeRest()
+
+	loginRequest := &User{
+		EnrollID:     admin,
+		EnrollSecret: pwd,
+	}
+	loginReqBody, err := json.Marshal(loginRequest)
+	err = loginRest(loginReqBody)
+	if err != nil {
+		myLogger.Errorf("Failed login [%s]", err)
+	}
+	return
+}
+
+func deploy() (err error) {
+	chaincodePath = viper.GetString("chaincode.id.path")
+	chaincodeName = viper.GetString("chaincode.id.name")
+
+	if chaincodeName != "" {
+		myLogger.Infof("Using existing chaincode [%s]", chaincodeName)
+		return
+	}
+
+	chaincodeInput := &pb.ChaincodeInput{Args: util.ToChaincodeArgs("init")}
+
+	if connPeer == "grpc" {
+		return deployChaincodeGrpc(chaincodeInput)
+	}
+	return deployChaincodeRest(chaincodeInput)
 }
 
 func createCurrency(currency string, count int64, user string) (txid string, err error) {

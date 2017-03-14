@@ -28,13 +28,6 @@ func initNVP() (err error) {
 		return
 	}
 
-	pwd := viper.GetString("app.admin.pwd")
-	adminInvoker, err = setCryptoClient(admin, pwd)
-	if err != nil {
-		myLogger.Errorf("Failed getting invoker [%s]", err)
-		return
-	}
-
 	return
 }
 
@@ -81,14 +74,13 @@ func confidentiality(enabled bool) {
 	}
 }
 
-func deployChaincodeGrpc() (err error) {
-	chaincodePath = viper.GetString("chaincode.id.path")
+func deployChaincodeGrpc(chaincodeInput *pb.ChaincodeInput) (err error) {
 	// Prepare the spec
 	spec := &pb.ChaincodeSpec{
-		Type:        pb.ChaincodeSpec_GOLANG,
-		ChaincodeID: &pb.ChaincodeID{Path: chaincodePath},
-		CtorMsg:     &pb.ChaincodeInput{Args: util.ToChaincodeArgs("init")},
-		// SecureContext:        secureContext,
+		Type:                 pb.ChaincodeSpec_GOLANG,
+		ChaincodeID:          &pb.ChaincodeID{Path: chaincodePath},
+		CtorMsg:              chaincodeInput,
+		SecureContext:        admin,
 		ConfidentialityLevel: confidentialityLevel,
 	}
 

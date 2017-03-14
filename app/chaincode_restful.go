@@ -5,9 +5,7 @@ import (
 	"fmt"
 	"time"
 
-	"github.com/hyperledger/fabric/core/util"
 	pb "github.com/hyperledger/fabric/protos"
-	"github.com/spf13/viper"
 )
 
 type loginResponse struct {
@@ -51,45 +49,17 @@ type rpcError struct {
 	Data string `json:"data,omitempty"`
 }
 
-func deployChaincodeRest() (err error) {
+func deployChaincodeRest(chaincodeInput *pb.ChaincodeInput) (err error) {
 	myLogger.Debug("------------- deploy chaincode -------------")
-
-	chaincodeName = viper.GetString("chaincode.id.name")
-	if chaincodeName != "" {
-		myLogger.Infof("Using existing chaincode [%s]", chaincodeName)
-		return
-	}
-
-	chaincodePath = viper.GetString("chaincode.id.path")
-	name := viper.GetString("app.admin.name")
-	pwd := viper.GetString("app.admin.pwd")
-
-	if chaincodePath == "" || name == "" || pwd == "" {
-		err = fmt.Errorf("config error: check your config.yaml")
-		return
-	}
-
-	loginRequest := &User{
-		EnrollID:     name,
-		EnrollSecret: pwd,
-	}
-	loginReqBody, err := json.Marshal(loginRequest)
-	err = loginRest(loginReqBody)
-	if err != nil {
-		myLogger.Errorf("Failed login [%s]", err)
-		return
-	}
 
 	request := &rpcRequest{
 		Jsonrpc: "2.0",
 		Method:  "deploy",
 		Params: &pb.ChaincodeSpec{
-			Type: pb.ChaincodeSpec_GOLANG,
-			ChaincodeID: &pb.ChaincodeID{
-				Path: chaincodePath,
-			},
-			CtorMsg:              &pb.ChaincodeInput{Args: util.ToChaincodeArgs("init")},
-			SecureContext:        name,
+			Type:                 pb.ChaincodeSpec_GOLANG,
+			ChaincodeID:          &pb.ChaincodeID{Path: chaincodePath},
+			CtorMsg:              chaincodeInput,
+			SecureContext:        admin,
 			ConfidentialityLevel: confidentialityLevel,
 		},
 		ID: time.Now().Unix(),
