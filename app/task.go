@@ -238,10 +238,6 @@ func execExpired(uuid ...string) {
 
 // expiredSuccess 处理过期挂单成功
 func expiredSuccess(uuids []string) {
-	// for _, v := range uuids {
-	// 	// 1.将处理成功的过期挂单从过期队列删除
-	// 	rmSetMember(ExpiredOrdersKey, v)
-	// }
 	// 1.从过期队列移到过期成功队列
 	for _, v := range uuids {
 		mvExpired2Success(v)

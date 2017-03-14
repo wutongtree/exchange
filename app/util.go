@@ -2,19 +2,12 @@ package main
 
 import (
 	"bytes"
-	"encoding/json"
 	"io/ioutil"
 	"math"
 	"net/http"
 	"strconv"
 	"strings"
 )
-
-// isJSON is a helper function to determine if a given string is proper JSON.
-func isJSON(s string) bool {
-	var js map[string]interface{}
-	return json.Unmarshal([]byte(s), &js) == nil
-}
 
 func convertInteger2Decimal(num int64) float64 {
 	nStr := strconv.FormatInt(num, 10)

@@ -348,7 +348,7 @@ func (a *AppREST) Currencys(rw web.ResponseWriter, req *web.Request) {
 }
 
 // MyCurrency MyCurrency
-func (s *AppREST) MyCurrency(rw web.ResponseWriter, req *web.Request) {
+func (a *AppREST) MyCurrency(rw web.ResponseWriter, req *web.Request) {
 	myLogger.Debug("------------- MyCurrency...")
 
 	encoder := json.NewEncoder(rw)
@@ -399,7 +399,7 @@ func (s *AppREST) MyCurrency(rw web.ResponseWriter, req *web.Request) {
 }
 
 // MyAsset MyAsset
-func (s *AppREST) MyAsset(rw web.ResponseWriter, req *web.Request) {
+func (a *AppREST) MyAsset(rw web.ResponseWriter, req *web.Request) {
 	myLogger.Debug("------------- mMyAssety...")
 
 	encoder := json.NewEncoder(rw)

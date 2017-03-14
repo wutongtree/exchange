@@ -90,15 +90,6 @@ func getOrderByUser(user string) ([]*Order, error) {
 
 	for _, v := range uuids {
 		order, _ := getOrder(v)
-		// if ok, _ := isInSet(ExchangeSuccessKey, v); ok {
-		// 	order.Status = 1
-		// } else if ok, _ := isInSet(ExpiredSuccessOrderKey, v); ok {
-		// 	order.Status = 2
-		// } else if ok, _ := isInSet(CancelSuccessOrderKey, v); ok {
-		// 	order.Status = 3
-		// } else {
-		// 	order.Status = 0
-		// }
 
 		txs = append(txs, order)
 	}
@@ -267,9 +258,6 @@ func dealMatchOrder(buyOrder, sellOrder *Order, timeStamp int64) error {
 		endPrice = sellPrice
 	}
 
-	// 成交量=min(买单最小可交易数量,卖单最小可交易数量)
-	// endCount := math.Min(math.Min(buyOrder.SrcCount*endPrice, buyOrder.DesCount), math.Min(sellOrder.SrcCount, sellOrder.DesCount*endPrice))
-
 	// 交易数以buyOrder的目标币为单位
 	endCount := float64(0)
 	if buyOrder.IsBuyAll && sellOrder.IsBuyAll {
@@ -290,7 +278,6 @@ func dealMatchOrder(buyOrder, sellOrder *Order, timeStamp int64) error {
 	// *******将处理挂单撮合，确保事务性**********
 	// ******************************************
 	pipe := client.Pipeline()
-	// multi := client.Multi()
 
 	//匹配的成对UUID，“买入挂单UUID,卖出挂单UUID”
 	matchBuyUUID := buyOrder.UUID
@@ -483,7 +470,6 @@ func getBSKeyByUUID(uuid string) string {
 
 func mvBS2Expired(uuid string) error {
 	pipe := client.Pipeline()
-	// mutli := client.Multi()
 
 	pipe.SAdd(ExpiredOrdersKey, uuid)
 	pipe.ZRem(getBSKeyByUUID(uuid), uuid)
@@ -518,7 +504,6 @@ func clearFailedOrder(uuid string) {
 
 func mvBS2Cancel(bsKey, uuid string) error {
 	pipe := client.Pipeline()
-	// mutil := client.Multi()
 
 	pipe.ZRem(bsKey, uuid)
 	pipe.SAdd(CancelingOrderKey, uuid)
@@ -538,7 +523,6 @@ func mvCancel2BS(uuid string) error {
 	// *******将撤单失败的还原回买卖队列，确保事务性**********
 	// ******************************************
 	pipe := client.Pipeline()
-	// multi := client.Multi()
 
 	//从待撤单队列中移除
 	pipe.SRem(PendingOrdersKey, uuid)
@@ -619,9 +603,6 @@ func mvExec2Success(key, uuid string) error {
 		return err
 	}
 	pipe.Set(uuid2[1], string(listValue), 0)
-	// // 修改时间，没必要事务处理，单独处理即可
-	// updateOrderTime(uuid2[0], 0, time.Now().Unix())
-	// updateOrderTime(uuid2[1], 0, time.Now().Unix())
 
 	_, err = pipe.Exec()
 

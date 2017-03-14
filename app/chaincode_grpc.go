@@ -155,6 +155,7 @@ func invokeChaincodeSigma(secureContext string, invoker crypto.Client, invokerCe
 		ChaincodeID:          &pb.ChaincodeID{Name: chaincodeName},
 		CtorMsg:              chaincodeInput,
 		Metadata:             sigma, // Proof of identity
+		SecureContext:        secureContext,
 		ConfidentialityLevel: confidentialityLevel,
 	}
 
@@ -196,10 +197,9 @@ func invokeChaincodeGrpc(secureContext string, invoker crypto.Client, chaincodeI
 
 	// Prepare spec and submit
 	spec := &pb.ChaincodeSpec{
-		Type:        pb.ChaincodeSpec_GOLANG,
-		ChaincodeID: &pb.ChaincodeID{Name: chaincodeName},
-		CtorMsg:     chaincodeInput,
-		// Metadata:             sigma, // Proof of identity
+		Type:                 pb.ChaincodeSpec_GOLANG,
+		ChaincodeID:          &pb.ChaincodeID{Name: chaincodeName},
+		CtorMsg:              chaincodeInput,
 		SecureContext:        secureContext,
 		ConfidentialityLevel: confidentialityLevel,
 	}
