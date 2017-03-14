@@ -61,6 +61,7 @@ func initPeerClient() (err error) {
 }
 
 func setCryptoClient(enrollID, enrollPWD string) (crypto.Client, error) {
+	myLogger.Debug("========", enrollID, enrollPWD)
 	if len(enrollPWD) > 0 {
 		if err := crypto.RegisterClient(enrollID, nil, enrollID, enrollPWD); err != nil {
 			return nil, err

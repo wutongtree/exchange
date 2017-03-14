@@ -88,6 +88,7 @@ func main() {
 	// primitives.SetSecurityLevel("SHA3", 256)
 	admin = viper.GetString("app.admin.name")
 	connPeer = viper.GetString("app.connpeer")
+	myLogger.Debugf("The peer connection type is: %s ", connPeer)
 	if connPeer == "grpc" {
 		if err := initNVP(); err != nil {
 			myLogger.Errorf("Failed initiliazing NVP [%s]", err)
