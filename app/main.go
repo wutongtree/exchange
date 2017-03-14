@@ -8,6 +8,7 @@ import (
 
 	"github.com/gocraft/web"
 	"github.com/hyperledger/fabric/core/crypto"
+	"github.com/hyperledger/fabric/core/crypto/primitives"
 	"github.com/op/go-logging"
 	"github.com/spf13/viper"
 )
@@ -85,7 +86,8 @@ func main() {
 	initRedis()
 	defer client.Close()
 
-	// primitives.SetSecurityLevel("SHA3", 256)
+	primitives.SetSecurityLevel("SHA3", 256)
+
 	admin = viper.GetString("app.admin.name")
 	connPeer = viper.GetString("app.connpeer")
 	myLogger.Debugf("The peer connection type is: %s ", connPeer)
