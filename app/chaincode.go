@@ -1,7 +1,6 @@
 package main
 
 import (
-	"errors"
 	"strconv"
 
 	"github.com/hyperledger/fabric/core/util"
@@ -17,22 +16,10 @@ var (
 )
 
 func deploy() (err error) {
-	myLogger.Debug("------------- deploy")
-
-	resp, err := deployChaincodeGrpc()
-	if err != nil {
-		myLogger.Errorf("Failed deploying [%s]", err)
-		return
+	if connPeer == "grpc" {
+		return deployChaincodeGrpc()
 	}
-	myLogger.Debugf("Resp [%s]", resp.String())
-	myLogger.Debugf("Chaincode NAME: [%s]-[%s]", chaincodeName, string(resp.Msg))
-
-	if resp.Status != pb.Response_SUCCESS {
-		return errors.New(string(resp.Msg))
-	}
-
-	myLogger.Debug("------------- Done!")
-	return
+	return deployChaincodeRest()
 }
 
 func createCurrency(currency string, count int64, user string) (txid string, err error) {

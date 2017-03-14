@@ -89,7 +89,7 @@ func confidentiality(enabled bool) {
 	}
 }
 
-func deployChaincodeGrpc() (resp *pb.Response, err error) {
+func deployChaincodeGrpc() (err error) {
 	chaincodePath = viper.GetString("chaincode.id.path")
 	// Prepare the spec
 	spec := &pb.ChaincodeSpec{
@@ -103,21 +103,25 @@ func deployChaincodeGrpc() (resp *pb.Response, err error) {
 	// First build the deployment spec
 	cds, err := getChaincodeBytes(spec)
 	if err != nil {
-		return nil, fmt.Errorf("Error getting deployment spec: %s ", err)
+		return fmt.Errorf("Error getting deployment spec: %s ", err)
 	}
 
 	// Now create the Transactions message and send to Peer.
 	transaction, err := adminInvoker.NewChaincodeDeployTransaction(cds, cds.ChaincodeSpec.ChaincodeID.Name)
 	if err != nil {
-		return nil, fmt.Errorf("Error deploying chaincode: %s ", err)
+		return fmt.Errorf("Error deploying chaincode: %s ", err)
 	}
 
-	resp, err = processTransaction(transaction)
+	resp, err := processTransaction(transaction)
 
 	myLogger.Debugf("resp [%s]", resp.String())
 
 	chaincodeName = cds.ChaincodeSpec.ChaincodeID.Name
 	myLogger.Debugf("ChaincodeName [%s]", chaincodeName)
+
+	if resp.Status != pb.Response_SUCCESS {
+		return errors.New(string(resp.Msg))
+	}
 
 	return
 }

@@ -109,7 +109,7 @@ func main() {
 	confidentiality(viper.GetBool("security.privacy"))
 
 	// Deploy
-	if err := deployChaincodeRest(); err != nil {
+	if err := deploy(); err != nil {
 		myLogger.Errorf("Failed deploying [%s]", err)
 		os.Exit(-1)
 	}

@@ -126,6 +126,7 @@ func deployChaincodeRest() (err error) {
 	}
 
 	chaincodeName = result.Result.Message
+	myLogger.Debugf("ChaincodeName [%s]", chaincodeName)
 
 	myLogger.Debug("------------- deploy Done! -------------")
 
