@@ -89,9 +89,7 @@ func main() {
 	crypto.Init()
 	// Enable fabric 'confidentiality'
 	confidentiality(viper.GetBool("security.privacy"))
-
-	adminLogin()
-
+	admin = viper.GetString("app.admin.name")
 	connPeer = viper.GetString("app.connpeer")
 	myLogger.Debugf("The peer connection type is: %s ", connPeer)
 

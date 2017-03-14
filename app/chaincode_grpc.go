@@ -27,6 +27,13 @@ func initNVP() (err error) {
 		myLogger.Debugf("Failed initNVP [%s]", err)
 		return
 	}
+	pwd := viper.GetString("app.admin.pwd")
+
+	adminInvoker, err = setCryptoClient(admin, pwd)
+	if err != nil {
+		myLogger.Errorf("Failed getting invoker [%s]", err)
+		return
+	}
 
 	return
 }

@@ -1,7 +1,6 @@
 package main
 
 import (
-	"encoding/json"
 	"strconv"
 
 	"github.com/hyperledger/fabric/core/util"
@@ -16,30 +15,6 @@ var (
 	chaincodePath  string
 	chaincodeName  string
 )
-
-func adminLogin() (err error) {
-	admin = viper.GetString("app.admin.name")
-	pwd := viper.GetString("app.admin.pwd")
-
-	if connPeer == "grpc" {
-		adminInvoker, err = setCryptoClient(admin, pwd)
-		if err != nil {
-			myLogger.Errorf("Failed getting invoker [%s]", err)
-			return
-		}
-	}
-
-	loginRequest := &User{
-		EnrollID:     admin,
-		EnrollSecret: pwd,
-	}
-	loginReqBody, err := json.Marshal(loginRequest)
-	err = loginRest(loginReqBody)
-	if err != nil {
-		myLogger.Errorf("Failed login [%s]", err)
-	}
-	return
-}
 
 func deploy() (err error) {
 	chaincodePath = viper.GetString("chaincode.id.path")
