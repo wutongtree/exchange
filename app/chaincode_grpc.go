@@ -18,7 +18,6 @@ import (
 )
 
 var (
-	confidentialityOn    bool
 	adminInvoker         crypto.Client
 	confidentialityLevel pb.ConfidentialityLevel
 )
@@ -75,9 +74,7 @@ func processTransaction(tx *pb.Transaction) (*pb.Response, error) {
 }
 
 func confidentiality(enabled bool) {
-	confidentialityOn = enabled
-
-	if confidentialityOn {
+	if enabled {
 		confidentialityLevel = pb.ConfidentialityLevel_CONFIDENTIAL
 	} else {
 		confidentialityLevel = pb.ConfidentialityLevel_PUBLIC
