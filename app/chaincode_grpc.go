@@ -248,11 +248,11 @@ func queryChaincodeGrpc(secureContext string, chaincodeInput *pb.ChaincodeInput)
 	resp, err := processTransaction(transaction)
 
 	myLogger.Debugf("Resp [%s]", resp.String())
-
 	resp.Msg, err = adminInvoker.DecryptQueryResult(transaction, resp.Msg)
 	if err != nil {
 		return "", fmt.Errorf("Decrypt Query Result error:%s", err)
 	}
+	myLogger.Debugf("Resp [%s]", resp.String())
 
 	if resp.Status != pb.Response_SUCCESS || string(resp.Msg) == "null" {
 		return "", errors.New(string(resp.Msg))

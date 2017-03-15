@@ -6,6 +6,7 @@ import (
 	"time"
 
 	pb "github.com/hyperledger/fabric/protos"
+	"github.com/spf13/viper"
 )
 
 type loginResponse struct {
@@ -51,6 +52,17 @@ type rpcError struct {
 
 func deployChaincodeRest(chaincodeInput *pb.ChaincodeInput) (err error) {
 	myLogger.Debug("------------- deploy chaincode -------------")
+
+	loginRequest := &User{
+		EnrollID:     admin,
+		EnrollSecret: viper.GetString("app.admin.pwd"),
+	}
+	loginReqBody, err := json.Marshal(loginRequest)
+	err = loginRest(loginReqBody)
+	if err != nil {
+		myLogger.Errorf("Failed login [%s]", err)
+		return
+	}
 
 	request := &rpcRequest{
 		Jsonrpc: "2.0",
