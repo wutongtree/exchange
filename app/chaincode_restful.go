@@ -2,6 +2,7 @@ package main
 
 import (
 	"encoding/json"
+	"errors"
 	"fmt"
 	"time"
 
@@ -100,11 +101,11 @@ func deployChaincodeRest(chaincodeInput *pb.ChaincodeInput) (err error) {
 
 	if result.Error != nil {
 		myLogger.Errorf("Failed deploying [%s]", result.Error.Message)
-		return
+		return errors.New(result.Error.Message)
 	}
 	if result.Result.Status != "OK" {
 		myLogger.Errorf("Failed deploying [%s]", result.Result.Message)
-		return
+		return errors.New(result.Result.Message)
 	}
 
 	chaincodeName = result.Result.Message
