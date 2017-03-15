@@ -104,10 +104,12 @@ func deployChaincodeGrpc(chaincodeInput *pb.ChaincodeInput) (err error) {
 	}
 
 	resp, err := processTransaction(transaction)
-
+	if err != nil {
+		return fmt.Errorf("Error deploy chaincode: %s ", err)
+	}
 	myLogger.Debugf("resp [%s]", resp.String())
 
-	chaincodeName = cds.ChaincodeSpec.ChaincodeID.Name
+	chaincodeName = string(resp.Msg)
 	myLogger.Debugf("ChaincodeName [%s]", chaincodeName)
 
 	if resp.Status != pb.Response_SUCCESS {
@@ -167,11 +169,11 @@ func invokeChaincodeSigma(secureContext string, invoker crypto.Client, invokerCe
 	if err != nil {
 		return "", fmt.Errorf("Error invoking chaincode: %s ", err)
 	}
+	myLogger.Debugf("Resp [%s]", resp.String())
 
 	if resp.Status != pb.Response_SUCCESS {
 		return "", fmt.Errorf("Error invoking chaincode: %s ", string(resp.Msg))
 	}
-	myLogger.Debugf("Resp [%s]", resp.String())
 
 	myLogger.Debug("------------- Done!")
 
@@ -212,11 +214,11 @@ func invokeChaincodeGrpc(secureContext string, invoker crypto.Client, chaincodeI
 	if err != nil {
 		return "", fmt.Errorf("Error invoking chaincode: %s ", err)
 	}
+	myLogger.Debugf("Resp [%s]", resp.String())
 
 	if resp.Status != pb.Response_SUCCESS {
 		return "", fmt.Errorf("Error invoking chaincode: %s ", string(resp.Msg))
 	}
-	myLogger.Debugf("Resp [%s]", resp.String())
 
 	myLogger.Debug("------------- Done!")
 
@@ -247,9 +249,10 @@ func queryChaincodeGrpc(secureContext string, chaincodeInput *pb.ChaincodeInput)
 
 	myLogger.Debugf("Resp [%s]", resp.String())
 
-	res, err := adminInvoker.DecryptQueryResult(transaction, resp.Msg)
-	myLogger.Debug("+++++++++++", string(res), err)
-	myLogger.Debug("Query....done")
+	resp.Msg, err = adminInvoker.DecryptQueryResult(transaction, resp.Msg)
+	if err != nil {
+		return "", fmt.Errorf("Decrypt Query Result error:%s", err)
+	}
 
 	if resp.Status != pb.Response_SUCCESS || string(resp.Msg) == "null" {
 		return "", errors.New(string(resp.Msg))
