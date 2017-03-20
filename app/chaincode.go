@@ -1,6 +1,7 @@
 package main
 
 import (
+	"fmt"
 	"strconv"
 
 	"github.com/hyperledger/fabric/core/util"
@@ -14,11 +15,21 @@ var (
 	serverClient   pb.PeerClient
 	chaincodePath  string
 	chaincodeName  string
+	chaincodeType  pb.ChaincodeSpec_Type
 )
 
 func deploy() (err error) {
 	chaincodePath = viper.GetString("chaincode.id.path")
 	chaincodeName = viper.GetString("chaincode.id.name")
+	ccType := viper.GetString("chaincode.id.type")
+
+	if ccType == "golang" {
+		chaincodeType = pb.ChaincodeSpec_GOLANG
+	} else if ccType == "java" {
+		chaincodeType = pb.ChaincodeSpec_JAVA
+	} else {
+		return fmt.Errorf("Unknow chiancode type: %s", ccType)
+	}
 
 	if chaincodeName != "" {
 		myLogger.Infof("Using existing chaincode [%s]", chaincodeName)

@@ -69,7 +69,7 @@ func deployChaincodeRest(chaincodeInput *pb.ChaincodeInput) (err error) {
 		Jsonrpc: "2.0",
 		Method:  "deploy",
 		Params: &pb.ChaincodeSpec{
-			Type:                 pb.ChaincodeSpec_GOLANG,
+			Type:                 chaincodeType,
 			ChaincodeID:          &pb.ChaincodeID{Path: chaincodePath},
 			CtorMsg:              chaincodeInput,
 			SecureContext:        admin,
@@ -123,7 +123,7 @@ func invokeChaincodeRest(secureContext string, chaincodeInput *pb.ChaincodeInput
 		Jsonrpc: "2.0",
 		Method:  "invoke",
 		Params: &pb.ChaincodeSpec{
-			Type: pb.ChaincodeSpec_GOLANG,
+			Type: chaincodeType,
 			ChaincodeID: &pb.ChaincodeID{
 				Name: chaincodeName,
 			},
@@ -179,7 +179,7 @@ func queryChaincodeRest(secureContext string, chaincodeInput *pb.ChaincodeInput)
 		Jsonrpc: "2.0",
 		Method:  "query",
 		Params: &pb.ChaincodeSpec{
-			Type: pb.ChaincodeSpec_GOLANG,
+			Type: chaincodeType,
 			ChaincodeID: &pb.ChaincodeID{
 				Name: chaincodeName,
 			},

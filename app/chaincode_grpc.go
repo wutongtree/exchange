@@ -84,7 +84,7 @@ func confidentiality(enabled bool) {
 func deployChaincodeGrpc(chaincodeInput *pb.ChaincodeInput) (err error) {
 	// Prepare the spec
 	spec := &pb.ChaincodeSpec{
-		Type:                 pb.ChaincodeSpec_GOLANG,
+		Type:                 chaincodeType,
 		ChaincodeID:          &pb.ChaincodeID{Path: chaincodePath},
 		CtorMsg:              chaincodeInput,
 		SecureContext:        admin,
@@ -149,7 +149,7 @@ func invokeChaincodeSigma(secureContext string, invoker crypto.Client, invokerCe
 
 	// Prepare spec and submit
 	spec := &pb.ChaincodeSpec{
-		Type:                 pb.ChaincodeSpec_GOLANG,
+		Type:                 chaincodeType,
 		ChaincodeID:          &pb.ChaincodeID{Name: chaincodeName},
 		CtorMsg:              chaincodeInput,
 		Metadata:             sigma, // Proof of identity
@@ -195,7 +195,7 @@ func invokeChaincodeGrpc(secureContext string, invoker crypto.Client, chaincodeI
 
 	// Prepare spec and submit
 	spec := &pb.ChaincodeSpec{
-		Type:                 pb.ChaincodeSpec_GOLANG,
+		Type:                 chaincodeType,
 		ChaincodeID:          &pb.ChaincodeID{Name: chaincodeName},
 		CtorMsg:              chaincodeInput,
 		SecureContext:        secureContext,
@@ -230,7 +230,7 @@ func queryChaincodeGrpc(secureContext string, chaincodeInput *pb.ChaincodeInput)
 
 	// Prepare spec and submit
 	spec := &pb.ChaincodeSpec{
-		Type:                 pb.ChaincodeSpec_GOLANG,
+		Type:                 chaincodeType,
 		ChaincodeID:          &pb.ChaincodeID{Name: chaincodeName},
 		CtorMsg:              chaincodeInput,
 		SecureContext:        secureContext,

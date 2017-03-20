@@ -339,6 +339,9 @@ chaincode:
         path: https://github.com/wutongtree/exchange-chaincode/go
         name:
 
+        # chaincode code type: golang  java
+        type: golang
+
     golang:
 
         # This is the basis for the Golang Dockerfile.  Additional commands will
