@@ -60,7 +60,7 @@ app:
             cancel: 5
     
     # conn Peer 连接peer方式 grpc/rest
-    connpeer: rest
+    connpeer: grpc
 
     # inner user
     users: test_user0 test_user1 test_user2 test_user3 test_user4
@@ -336,11 +336,11 @@ chaincode:
     # returned by the system in response to the deploy transaction. In
     # development mode where user runs the chaincode, the name can be any string
     id:
-        path: https://github.com/wutongtree/exchange-chaincode/go
+        path: https://github.com/wutongtree/exchange-chaincode/java
         name:
 
         # chaincode code type: golang  java
-        type: golang
+        type: java
 
     golang:
 
@@ -426,7 +426,7 @@ security:
     tcert:
       batch:
         # The size of the batch of TCerts
-        size:  200
+        size:  20
     # Enable the release of keys needed to decrypt attributes from TCerts in
     # the chaincode using the metadata field of the transaction (requires
     # security to be enabled).
