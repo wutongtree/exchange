@@ -336,11 +336,11 @@ chaincode:
     # returned by the system in response to the deploy transaction. In
     # development mode where user runs the chaincode, the name can be any string
     id:
-        path: https://github.com/wutongtree/exchange-chaincode/java
+        path: https://github.com/wutongtree/exchange-chaincode/go
         name:
 
         # chaincode code type: golang  java
-        type: java
+        type: golang
 
     golang:
 
