@@ -54,7 +54,7 @@ func createCurrency(currency string, count int64, user string) (txid string, err
 		invoker, err := setCryptoClient(user, "")
 		if err != nil {
 			myLogger.Errorf("Failed getting invoker [%s]", err)
-			return
+			return "", err
 		}
 		// invokerCert, err := invoker.GetTCertificateHandlerNext()
 		// if err != nil {
@@ -79,7 +79,7 @@ func releaseCurrency(currency string, count int64, user string) (txid string, er
 		invoker, err := setCryptoClient(user, "")
 		if err != nil {
 			myLogger.Errorf("Failed getting invoker [%s]", err)
-			return
+			return "", err
 		}
 		// invokerCert, err := invoker.GetTCertificateHandlerNext()
 		// if err != nil {
@@ -103,7 +103,7 @@ func assignCurrency(assigns string, user string) (txid string, err error) {
 		invoker, err := setCryptoClient(user, "")
 		if err != nil {
 			myLogger.Errorf("Failed getting invoker [%s]", err)
-			return
+			return "", err
 		}
 		// invokerCert, err := invoker.GetTCertificateHandlerNext()
 		// if err != nil {
